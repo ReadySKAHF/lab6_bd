@@ -1,0 +1,217 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Управление автомобилями</title>
+</head>
+<body>
+    <h1>Управление автомобилями</h1>
+
+    <h2>Добавить новый автомобиль</h2>
+    <form id="createCarForm">
+        <label for="brand">Марка:</label>
+        <input type="text" id="brand" required>
+        <br>
+        <label for="color">Цвет:</label>
+        <input type="text" id="color" required>
+        <br>
+        <label for="licensePlate">Регистрационный номер:</label>
+        <input type="text" id="licensePlate" required>
+        <br>
+        <label for="yearOfProduction">Год выпуска:</label>
+        <input type="number" id="yearOfProduction" required>
+        <br>
+        <label for="power">Мощность:</label>
+        <input type="number" id="power" required>
+        <br>
+        <label for="chassisNumber">Номер кузова:</label>
+        <input type="text" id="chassisNumber" required>
+        <br>
+        <label for="engineNumber">Номер двигателя:</label>
+        <input type="text" id="engineNumber" required>
+        <br>
+        <label for="dateReceived">Дата поступления:</label>
+        <input type="date" id="dateReceived" required>
+        <br>
+        <button type="submit">Добавить</button>
+    </form>
+
+    <h2>Список автомобилей</h2>
+    <table id="carsTable" border="1">
+        <tr>
+            <th>ID</th>
+            <th>Марка</th>
+            <th>Цвет</th>
+            <th>Регистрационный номер</th>
+            <th>Год выпуска</th>
+            <th>Мощность</th>
+            <th>Номер кузова</th>
+            <th>Номер двигателя</th>
+            <th>Дата поступления</th>
+            <th>Действия</th>
+        </tr>
+    </table>
+
+    <script>
+        // Функция для отправки GET-запроса на получение списка автомобилей
+        function getCars() {
+            fetch('http://localhost:5197/api/carsAPI')  // Используйте правильный URL
+                .then(response => response.json())
+                .then(data => {
+                    // Доступ к массиву автомобилей через $values
+                    const cars = data.$values || []; // Получаем массив из ключа $values
+                    const table = document.getElementById('carsTable');
+
+                    // Очищаем таблицу перед обновлением
+                    table.innerHTML = `
+                        <tr>
+                            <th>ID</th>
+                            <th>Марка</th>
+                            <th>Цвет</th>
+                            <th>Регистрационный номер</th>
+                            <th>Год выпуска</th>
+                            <th>Мощность</th>
+                            <th>Номер кузова</th>
+                            <th>Номер двигателя</th>
+                            <th>Дата поступления</th>
+                            <th>Действия</th>
+                        </tr>
+                    `;
+
+                    // Проходим по массиву и добавляем строки в таблицу
+                    cars.forEach(car => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${car.carId}</td>
+                            <td>${car.brand || ''}</td>
+                            <td>${car.color || ''}</td>
+                            <td>${car.licensePlate}</td>
+                            <td>${car.yearOfProduction}</td>
+                            <td>${car.power}</td>
+                            <td>${car.chassisNumber}</td>
+                            <td>${car.engineNumber}</td>
+                            <td>${car.dateReceived}</td>
+                            <td>
+                                <button onclick="editCar(${car.carId}, '${car.brand || ''}', '${car.color || ''}', '${car.licensePlate}', ${car.yearOfProduction}, ${car.power}, '${car.chassisNumber}', '${car.engineNumber}', '${car.dateReceived}')">Редактировать</button>
+                                <button onclick="deleteCar(${car.carId})">Удалить</button>
+                            </td>
+                        `;
+                        table.appendChild(row);
+                    });
+                })
+                .catch(error => {
+                    console.error('Ошибка при загрузке данных:', error);
+                });
+        }
+
+        // Функция для отправки POST-запроса на создание автомобиля
+        function createCar(event) {
+            event.preventDefault();
+            const brand = document.getElementById('brand').value;
+            const color = document.getElementById('color').value;
+            const licensePlate = document.getElementById('licensePlate').value;
+            const yearOfProduction = document.getElementById('yearOfProduction').value;
+            const power = document.getElementById('power').value;
+            const chassisNumber = document.getElementById('chassisNumber').value;
+            const engineNumber = document.getElementById('engineNumber').value;
+            const dateReceived = document.getElementById('dateReceived').value;
+
+            fetch('/api/CarsAPI', { // API URL для создания нового автомобиля
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    brand: brand,
+                    color: color,
+                    licensePlate: licensePlate,
+                    yearOfProduction: yearOfProduction,
+                    power: power,
+                    chassisNumber: chassisNumber,
+                    engineNumber: engineNumber,
+                    dateReceived: dateReceived
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Автомобиль добавлен:', data);
+                    document.getElementById('createCarForm').reset();
+                    getCars();  // Обновляем список автомобилей
+                });
+        }
+
+        // Функция для отправки DELETE-запроса на удаление автомобиля
+        function deleteCar(carId) {
+            fetch(`/api/CarsAPI/${carId}`, {  // API URL для удаления автомобиля
+                method: 'DELETE'
+            })
+                .then(response => {
+                    console.log('Автомобиль удален:', carId);
+                    getCars();  // Обновляем список автомобилей
+                });
+        }
+
+        // Функция для отправки PUT-запроса на обновление автомобиля
+        function updateCar(carId, brand, color, licensePlate, yearOfProduction, power, chassisNumber, engineNumber, dateReceived) {
+            const updatedCar = {
+                carId: carId,
+                brand: brand,
+                color: color,
+                licensePlate: licensePlate,
+                yearOfProduction: yearOfProduction,
+                power: power,
+                chassisNumber: chassisNumber,
+                engineNumber: engineNumber,
+                dateReceived: dateReceived
+            };
+
+            fetch(`/api/CarsAPI/${carId}`, { // API URL для обновления автомобиля
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updatedCar)
+            })
+                .then(response => {
+                    console.log('Автомобиль обновлен:', updatedCar);
+                    getCars();  // Обновляем список автомобилей
+                });
+        }
+
+        // Функция для заполнения формы редактирования автомобиля
+        function editCar(carId, brand, color, licensePlate, yearOfProduction, power, chassisNumber, engineNumber, dateReceived) {
+            document.getElementById('brand').value = brand;
+            document.getElementById('color').value = color;
+            document.getElementById('licensePlate').value = licensePlate;
+            document.getElementById('yearOfProduction').value = yearOfProduction;
+            document.getElementById('power').value = power;
+            document.getElementById('chassisNumber').value = chassisNumber;
+            document.getElementById('engineNumber').value = engineNumber;
+            document.getElementById('dateReceived').value = dateReceived;
+
+            const updateButton = document.createElement('button');
+            updateButton.textContent = 'Обновить';
+            updateButton.onclick = function () {
+                updateCar(carId, document.getElementById('brand').value, document.getElementById('color').value, document.getElementById('licensePlate').value, document.getElementById('yearOfProduction').value, document.getElementById('power').value, document.getElementById('chassisNumber').value, document.getElementById('engineNumber').value, document.getElementById('dateReceived').value);
+            };
+
+            const form = document.getElementById('createCarForm');
+            const submitButton = form.querySelector('[type="submit"]');
+            if (submitButton) {
+                form.removeChild(submitButton);
+            }
+            form.appendChild(updateButton);
+        }
+
+        // Загрузка списка автомобилей при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function () {
+            getCars();
+        });
+
+        // Добавление обработчика события отправки формы
+        const createCarForm = document.getElementById('createCarForm');
+        createCarForm.addEventListener('submit', createCar);
+    </script>
+</body>
+</html>
